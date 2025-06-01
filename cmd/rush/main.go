@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"rush/internal/server"
+)
 
 func main() {
-	fmt.Println("Welcome to rush")
+	server.Run()
 }
