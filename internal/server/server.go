@@ -2,18 +2,20 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"strconv"
 )
 
-func Run() {
-	port := "5173"
-	listener, err := net.Listen("tcp", ":"+port)
+func Run(port int) {
+	strPort := strconv.Itoa(port)
+	listener, err := net.Listen("tcp", ":"+strPort)
 	if err != nil {
-		panic("Error listening: " + err.Error())
+		log.Fatal(err)
 	}
 
 	defer listener.Close()
-	fmt.Println("Listening on " + port)
+	log.Printf("rush running on port %s\n", strPort)
 
 	for {
 		conn, err := listener.Accept()
@@ -22,6 +24,6 @@ func Run() {
 			continue
 		}
 
-		fmt.Println("Accepting connection "+port, conn.LocalAddr().String())
+		go handleConnection(conn)
 	}
 }
