@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"github.com/common-nighthawk/go-figure"
 	"log"
 	"net"
 	"strings"
@@ -12,47 +13,18 @@ func handleConnection(conn net.Conn) {
 	log.Printf("Handling connection from %s", conn.RemoteAddr())
 
 	reader := bufio.NewReader(conn)
-	cache := make(map[string]string)
+	ascii := figure.NewFigure("RUSH", "", true).String()
+	message(conn, ascii+"\n")
+
 	for {
-		conn.Write([]byte("-> "))
-		cmd, _ := reader.ReadString('\n')
-		normalizedCmd := strings.ToLower(strings.TrimSpace(cmd))
-
-		switch {
-		case normalizedCmd == "ping":
-			conn.Write([]byte("PONG\n"))
-		case strings.HasPrefix(normalizedCmd, "set"):
-			splitCommand := strings.Split(normalizedCmd, " ")
-			if len(splitCommand) < 3 {
-				conn.Write([]byte("INVALID COMMAND: " + normalizedCmd + "\n"))
-				continue
-			}
-
-			key := splitCommand[1]
-			value := splitCommand[2]
-			cache[key] = value
-		case strings.HasPrefix(normalizedCmd, "get"):
-			splitCommand := strings.Split(normalizedCmd, " ")
-			if len(splitCommand) < 2 {
-				conn.Write([]byte("INVALID COMMAND: " + normalizedCmd + "\n"))
-			}
-			key := splitCommand[1]
-			value, ok := cache[key]
-			if !ok {
-				conn.Write([]byte("INVALID COMMAND: KEY " + key + " not found \n"))
-			}
-
-			conn.Write([]byte(value + "\n"))
-		case strings.HasPrefix(normalizedCmd, "del"):
-			splitCommand := strings.Split(normalizedCmd, " ")
-			if len(splitCommand) < 2 {
-				conn.Write([]byte("INVALID COMMAND: " + cmd + "\n"))
-			}
-			key := splitCommand[1]
-			delete(cache, key)
-			conn.Write([]byte("OK\n"))
-		default:
-			conn.Write([]byte("INVALID COMMAND: " + cmd + "\n"))
+		conn.Write([]byte("- "))
+		fullCommand, err := reader.ReadString('\n')
+		if err != nil {
+			log.Printf("Client from %s has disconnected", conn.RemoteAddr())
+			return
 		}
+
+		splitCommand := strings.Fields(fullCommand)
+		cmd(conn, splitCommand[0], splitCommand[1:]...)
 	}
 }

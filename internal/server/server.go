@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -15,12 +14,14 @@ func Run(port int) {
 	}
 
 	defer listener.Close()
-	log.Printf("rush running on port %s\n", strPort)
+	log.Printf("rush server is open on port %s\n", strPort)
+	log.Printf("Accepting connections")
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error accepting: " + err.Error())
+			log.Printf("Error accepting connection: %s\n", err)
+			messageError(conn, "Connection not accepted")
 			continue
 		}
 
