@@ -3,10 +3,15 @@ package server
 import (
 	"log"
 	"net"
+	"rush/internal/persistence"
 	"strconv"
 )
 
 func Run(port int) {
+	err := persistence.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 	strPort := strconv.Itoa(port)
 	listener, err := net.Listen("tcp", ":"+strPort)
 	if err != nil {

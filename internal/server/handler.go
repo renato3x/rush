@@ -10,7 +10,9 @@ import (
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	log.Printf("Handling connection from %s", conn.RemoteAddr())
+
+	addr := conn.RemoteAddr()
+	log.Printf("Handling connection from %s", addr)
 
 	reader := bufio.NewReader(conn)
 	ascii := figure.NewFigure("RUSH", "", true).String()
@@ -20,11 +22,17 @@ func handleConnection(conn net.Conn) {
 		conn.Write([]byte("- "))
 		fullCommand, err := reader.ReadString('\n')
 		if err != nil {
-			log.Printf("Client from %s has disconnected", conn.RemoteAddr())
+			log.Printf("Client from %s has disconnected", addr)
 			return
 		}
 
 		splitCommand := strings.Fields(fullCommand)
-		cmd(conn, splitCommand[0], splitCommand[1:]...)
+
+		args := make([]string, len(splitCommand))
+		if len(splitCommand) > 1 {
+			args = splitCommand[1:]
+		}
+
+		cmd(conn, splitCommand[0], args...)
 	}
 }
