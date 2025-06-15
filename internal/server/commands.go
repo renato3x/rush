@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 	"rush/internal/persistence"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func process(fullCommand string) (string, []string, error) {
@@ -39,7 +41,7 @@ func cmd(conn net.Conn, fullCommand string) {
 
 	if command == "get" {
 		if len(args) != 1 {
-			messageError(conn, "ERR usage: GET <key>")
+			messageError(conn, "Invalid usage: GET <key>")
 			return
 		}
 
@@ -49,13 +51,23 @@ func cmd(conn net.Conn, fullCommand string) {
 	}
 
 	if command == "set" {
-		if len(args) != 2 {
-			messageError(conn, "ERR usage: SET <key> <value>")
+		if len(args) < 2 {
+			messageError(conn, "Invalid usage: SET <key> <value>")
 			return
 		}
 
 		key, value := args[0], args[1]
-		err := set(key, value)
+		ttl := -1
+
+		if len(args) > 2 {
+			ttl, err = strconv.Atoi(args[2])
+			if err != nil {
+				messageError(conn, "Invalid usage: Invalid TTL "+args[2])
+				return
+			}
+		}
+
+		err := set(key, value, ttl)
 		if err != nil {
 			messageError(conn, "Cannot persist KEY "+key)
 			return
@@ -68,14 +80,27 @@ func cmd(conn net.Conn, fullCommand string) {
 	messageError(conn, "Invalid command \"%s\"", command)
 }
 
-func set(key, value string) error {
+func set(key, value string, ttl int) error {
 	persistence.Data[key] = value
 	err := persistence.Save()
 	if err != nil {
 		delete(persistence.Data, key)
 		return err
 	}
+
+	if ttl > -1 {
+		go func() {
+			time.Sleep(time.Duration(ttl) * time.Second)
+			del(key)
+		}()
+	}
+
 	return nil
+}
+
+func del(key string) {
+	delete(persistence.Data, key)
+	persistence.Save()
 }
 
 func get(key string) string {
