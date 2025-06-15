@@ -1,22 +1,46 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"rush/internal/persistence"
 	"strings"
 )
 
-func cmd(conn net.Conn, command string, args ...string) {
-	normalizedCommand := strings.ToLower(command)
+func process(fullCommand string) (string, []string, error) {
+	trimmedCommand := strings.TrimSpace(fullCommand)
+	splitCommand := strings.Split(trimmedCommand, " ")
 
-	if normalizedCommand == "ping" {
+	if len(splitCommand) == 1 && splitCommand[0] == "" {
+		err := fmt.Errorf("no command given")
+		return "", nil, err
+	}
+
+	command := splitCommand[0]
+	var args []string
+	if len(splitCommand) > 1 {
+		args = splitCommand[1:]
+	}
+
+	return command, args, nil
+}
+
+func cmd(conn net.Conn, fullCommand string) {
+	command, args, err := process(fullCommand)
+
+	if err != nil {
+		return
+	}
+
+	if command == "ping" {
 		message(conn, "PONG")
 		return
 	}
 
-	if normalizedCommand == "get" {
-		if len(args) < 1 {
+	if command == "get" {
+		if len(args) != 1 {
 			messageError(conn, "ERR usage: GET <key>")
+			return
 		}
 
 		value := get(args[0])
@@ -24,8 +48,8 @@ func cmd(conn net.Conn, command string, args ...string) {
 		return
 	}
 
-	if normalizedCommand == "set" {
-		if len(args) < 2 {
+	if command == "set" {
+		if len(args) != 2 {
 			messageError(conn, "ERR usage: SET <key> <value>")
 			return
 		}
