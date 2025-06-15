@@ -18,7 +18,7 @@ func process(fullCommand string) (string, []string, error) {
 		return "", nil, err
 	}
 
-	command := splitCommand[0]
+	command := strings.ToLower(splitCommand[0])
 	var args []string
 	if len(splitCommand) > 1 {
 		args = splitCommand[1:]
@@ -77,6 +77,24 @@ func cmd(conn net.Conn, fullCommand string) {
 		return
 	}
 
+	if command == "del" {
+		if len(args) != 1 {
+			messageError(conn, "Invalid usage: DEL <key>")
+			return
+		}
+
+		key := args[0]
+		del(key)
+		message(conn, "OK")
+		return
+	}
+
+	if command == "size" {
+		fullSize := size()
+		message(conn, strconv.Itoa(fullSize))
+		return
+	}
+
 	messageError(conn, "Invalid command \"%s\"", command)
 }
 
@@ -109,4 +127,8 @@ func get(key string) string {
 		return "nil"
 	}
 	return value
+}
+
+func size() int {
+	return len(persistence.Data)
 }
