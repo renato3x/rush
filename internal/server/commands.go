@@ -95,6 +95,12 @@ func cmd(conn net.Conn, fullCommand string) {
 		return
 	}
 
+	if command == "keys" {
+		result := keys()
+		message(conn, result)
+		return
+	}
+
 	messageError(conn, "Invalid command \"%s\"", command)
 }
 
@@ -131,4 +137,21 @@ func get(key string) string {
 
 func size() int {
 	return len(persistence.Data)
+}
+
+func keys() string {
+	fullSize := size()
+	final := ""
+
+	i := 0
+	for key := range persistence.Data {
+		i++
+		if i == fullSize {
+			final += key
+			continue
+		}
+		final += key + "\n"
+	}
+
+	return final
 }
